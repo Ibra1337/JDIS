@@ -2,7 +2,7 @@ package communication;
 
 import communication.networking.RequestDispatcher;
 import dataStore.DataStore;
-import dataStore.StringDataStore;
+import dataStore.DataStoreImpl;
 import utiils.CommandHandler;
 
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class RequestDispatcherImpl implements RequestDispatcher {
 
-    private final DataStore<String, String> dataStore = new StringDataStore();
+    private final DataStoreImpl dataStore = new DataStoreImpl();
     private Map<String, CommandHandler> commandHandlers = new HashMap<>();
 
     public RequestDispatcherImpl(){
@@ -57,14 +57,14 @@ public class RequestDispatcherImpl implements RequestDispatcher {
             System.out.println("handle put");
             var data = args.stream().findFirst().get().split(";");
 
-            dataStore.set(data[0] , data[1]);
+            dataStore.setString(data[0] , data[1]);
             System.out.println("sending " + data[1]);
             client.write(ByteBuffer.wrap(data[1].getBytes() ));
             return "OK";
         });
         commandHandlers.put("get" , (client,args) -> {
             var data = args.stream().findFirst().get().split(";");
-            client.write(ByteBuffer.wrap(dataStore.get(data[0]).getBytes() ));
+            client.write(ByteBuffer.wrap(dataStore.get(data[0]).toString().getBytes() ));
             return "OK";
 
 

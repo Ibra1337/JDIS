@@ -2,13 +2,10 @@ package communication.networking;
 
 import communication.RequestDispatcherImpl;
 import dataStore.DataStore;
-import dataStore.StringDataStore;
-import utiils.CommandHandler;
-import utiils.Response;
+import dataStore.DataStoreImpl;
 
 import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -24,7 +21,7 @@ public class TCPServer implements Server {
     private RequestParser requestParser;
 
     private RequestDispatcher requestDispatcher;
-    private final DataStore<String, String> dataStore = new StringDataStore();
+    private final DataStoreImpl dataStore = new DataStoreImpl();
     private Selector selector;
     public TCPServer(String host, int port) {
         this.host = host;
