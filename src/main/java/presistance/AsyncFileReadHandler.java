@@ -1,18 +1,14 @@
 package presistance;
 
 import dataStore.DataStoreImpl;
-import dataStore.entity.StoredEntity;
-import dataStore.entity.StringEntity;
-import lombok.extern.slf4j.Slf4j;
+import presistance.entry.DecodedEntry;
 import presistance.entry.EntryBuilder;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -58,6 +54,17 @@ public class AsyncFileReadHandler implements FileReadHandler {
 
             }
         }
+
+        public CompletableFuture<DecodedEntry> loadByKey(String key) {
+            CompletableFuture<DecodedEntry> resultFuture = new CompletableFuture<>();
+            EntrySearcher searcher = new EntrySearcher(fc, key, resultFuture);
+
+            ByteBuffer buf = ByteBuffer.allocate(4096);
+            fc.read(buf, 0, buf, searcher);
+
+            return resultFuture;
+        }
+
 
         @Override
         public void completed(Integer bytesRead, ByteBuffer buf) {
@@ -112,9 +119,74 @@ public class AsyncFileReadHandler implements FileReadHandler {
         }
     }
 
+    private class EntrySearcher implements CompletionHandler<Integer, ByteBuffer> {
+        private final AsynchronousFileChannel fc;
+        private final AtomicLong filePosition = new AtomicLong(0);
+        private final AtomicBoolean headerLoaded = new AtomicBoolean(false);
 
+        private final String targetKey;
+        private final CompletableFuture<DecodedEntry> resultFuture;
+        private final EntryBuilder entryBuilder = new EntryBuilder();
 
+        public EntrySearcher(AsynchronousFileChannel fc, String targetKey, CompletableFuture<DecodedEntry> resultFuture) {
+            this.fc = fc;
+            this.targetKey = targetKey;
+            this.resultFuture = resultFuture;
+        }
 
+        private void loadHeader(ByteBuffer buf) {
+            buf.position(17);
+            headerLoaded.set(true);
+        }
 
+        @Override
+        public void completed(Integer bytesRead, ByteBuffer buf) {
+            if (bytesRead == -1) {
+                resultFuture.complete(null);
+                closeFile();
+                return;
+            }
+
+            buf.flip();
+
+            if (!headerLoaded.get()) {
+                loadHeader(buf);
+            }
+
+            while (buf.hasRemaining()) {
+                int consumed = entryBuilder.consume(buf);
+                if (consumed == 0) break;
+
+                filePosition.addAndGet(consumed);
+
+                if (entryBuilder.isComplete()) {
+                    DecodedEntry entry = entryBuilder.build();
+                    if (entry.getKey().equals(targetKey)) {
+                        resultFuture.complete(entry);
+                        closeFile();
+                        return;
+                    }
+                    entryBuilder.reset();
+                }
+            }
+
+            buf.clear();
+            fc.read(buf, filePosition.get(), buf, this);
+        }
+
+        @Override
+        public void failed(Throwable exc, ByteBuffer buf) {
+            resultFuture.completeExceptionally(exc);
+            closeFile();
+        }
+
+        private void closeFile() {
+            try {
+                fc.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 }

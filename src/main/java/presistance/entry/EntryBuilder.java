@@ -153,6 +153,11 @@ public class EntryBuilder {
         return new DecodedEntry(key, entity, expiration);
     }
 
+    public String getKey(){
+        if (keyBytes.length == keyLen)
+            return new String(keyBytes);
+        return null;
+    }
     public void reset() {
         step = Step.EXPIRATION_FLAG;
         hasExpiration = false;
