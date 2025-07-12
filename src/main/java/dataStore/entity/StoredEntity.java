@@ -37,4 +37,6 @@ public abstract class StoredEntity<T> implements Serializable {
     public int hashCode() {
         return value.hashCode();
     }
+
+
 }

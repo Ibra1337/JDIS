@@ -4,6 +4,7 @@ import dataStore.entity.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class DataStoreImpl {
 
@@ -65,6 +66,7 @@ public class DataStoreImpl {
     }
 
     public boolean delete(String key) {
+        expriationStore.remove(key);
         return store.remove(key) != null;
     }
 
@@ -120,7 +122,6 @@ public class DataStoreImpl {
                 ((DoubleEntity) entity).getValue() : null;
     }
 
-    // List operations
     public int listPush(String key, String... values) {
         StoredEntity<?> entity = get(key);
         ListEntity listEntity;
@@ -143,11 +144,10 @@ public class DataStoreImpl {
 
     public String listPop(String key) {
         StoredEntity<?> entity = get(key);
-        if (!(entity instanceof ListEntity)) {
+        if (!(entity instanceof ListEntity listEntity)) {
             return null;
         }
 
-        ListEntity listEntity = (ListEntity) entity;
         if (listEntity.size() == 0) {
             return null;
         }
@@ -208,7 +208,32 @@ public class DataStoreImpl {
         return ((HashEntity) entity).getFields();
     }
 
-    // Utility methods
+    public List<String> getRandomExpirationKeys(int amount){
+        if (expriationStore.keySet().size() < amount)
+            amount = getKeys().size();
+
+        var indexes = new HashSet<>(amount);
+        for (int i =0 ; i < amount; i++ )
+            indexes.add(ThreadLocalRandom.current().nextInt(expriationStore.size()));
+
+
+        List<String> keys = new LinkedList<>();
+
+        int i = 0;
+
+        for (String k : expriationStore.keySet()) {
+            if (indexes.contains(i)) {
+                keys.add(k);
+                if (keys.size() == amount )
+                    break;
+            }
+
+            i++;
+        }
+
+        return keys;
+    }
+
     public Map<String, StoredEntityType> getAllTypes() {
         Map<String, StoredEntityType> types = new HashMap<>();
         for (Map.Entry<String, StoredEntity<?>> entry : store.entrySet()) {

@@ -97,6 +97,10 @@ public class AsyncFileReadHandler implements FileReadHandler {
                     break;
                 }
                 var entry = entryBuilder.build();
+                if (entry.getExpiration() != null && entry.getExpiration() >  System.currentTimeMillis()){
+                    entryBuilder.reset();
+                    break;
+                }
                 dataStore.set(entry.getKey() , entry.getStoredEntity() , entry.getExpiration());
                 entryBuilder.reset();
                 System.out.println("[info] entry loaded " + dataStore.size());
@@ -161,6 +165,7 @@ public class AsyncFileReadHandler implements FileReadHandler {
 
                 if (entryBuilder.isComplete()) {
                     DecodedEntry entry = entryBuilder.build();
+
                     if (entry.getKey().equals(targetKey)) {
                         resultFuture.complete(entry);
                         closeFile();
