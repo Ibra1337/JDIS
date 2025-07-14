@@ -88,12 +88,6 @@ public class AsyncFileWriteHandler implements FileWriterHandler {
         }
     }
 
-    // loading data there are 3 types of expected value
-    // -> (optional) (time byte) + 8 time bytes
-    // -> 1 type byte
-    // -> key len + key
-    // -> val len + val
-    // basic idea generate bytes untill buff full -> dup bytes into file
 
     private static class WriteDatastoreHandler implements CompletionHandler<Integer, WriteDatastoreContext> {
         private final Encoder entryEncoder = new Encoder();
