@@ -1,30 +1,27 @@
 package communication;
 
-import java.util.Collection;
+import lombok.Getter;
 
+import java.util.Collection;
+import java.util.List;
+
+@Getter
 public class Command {
 
     @Override
     public String toString() {
         return "Command{" +
-                "command='" + command + '\'' +
+                "command='" + name + '\'' +
                 ", args=" + args +
                 '}';
     }
 
-    private String command;
-    private  Collection<String> args;
+    private String name;
+    private List<String> args;
 
-    public Command(String command, Collection<String> args) {
-        this.command = command;
+    public Command(String command, List<String> args) {
+        this.name = command;
         this.args = args;
     }
 
-    public String getCommand() {
-        return command;
-    }
-
-    public Collection<String> getArgs() {
-        return args;
-    }
 }

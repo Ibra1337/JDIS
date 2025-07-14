@@ -1,7 +1,7 @@
 package communication.networking;
 
-import communication.RequestDispatcherImpl;
-import dataStore.DataStore;
+import communication.parser.RespDecoder;
+import communication.parser.RequestReader;
 import dataStore.DataStoreImpl;
 
 import java.io.*;
@@ -18,16 +18,15 @@ public class TCPServer implements Server {
     private String host;
     private int port;
 
-    private RequestParser requestParser;
+    private final RequestReader requestReader;
 
-    private RequestDispatcher requestDispatcher;
     private final DataStoreImpl dataStore = new DataStoreImpl();
     private Selector selector;
     public TCPServer(String host, int port) {
         this.host = host;
         this.port = port;
-        this.requestParser = new RequestParserImpl();
-        requestDispatcher = new RequestDispatcherImpl();
+        this.requestReader = new RespDecoder();
+
     }
 
 
@@ -92,14 +91,11 @@ public class TCPServer implements Server {
           void handleRead(SelectionKey key)
             throws IOException {
             System.out.println("Reading...");
-            SocketChannel client = (SocketChannel) key.channel();
-            var com  = this.requestParser.parse(client);
-            if (com != null) {
-                System.out.println(com.toString());
-                requestDispatcher.dispatchRequest(com, client);
-            }else
-                System.out.println("error par");
-    }
+            SocketChannel chanel = (SocketChannel) key.channel();
+            ClientConnection clientConnection = new ClientConnection(chanel);
+            var com  = this.requestReader.read(clientConnection);
+            //TODO: add request handler
+        }
     }
 
 
