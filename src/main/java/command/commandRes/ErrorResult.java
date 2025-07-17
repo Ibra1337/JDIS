@@ -13,6 +13,6 @@ public class ErrorResult implements CommandResult {
 
     @Override
     public String toRespFormat() {
-        return null;
+        return "-" + message + "\r\n";
     }
 }

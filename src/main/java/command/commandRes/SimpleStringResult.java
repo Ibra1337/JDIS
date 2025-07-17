@@ -13,6 +13,6 @@ public class SimpleStringResult implements CommandResult {
 
     @Override
     public String toRespFormat() {
-        return null;
+        return "+" + value + "\r\n";
     }
 }

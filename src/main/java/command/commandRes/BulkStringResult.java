@@ -1,7 +1,7 @@
 package command.commandRes;
 
 public class BulkStringResult implements CommandResult {
-    private final String value; // or byte[]
+    private final String value;
 
     public BulkStringResult(String value) {
         this.value = value;
@@ -13,6 +13,9 @@ public class BulkStringResult implements CommandResult {
 
     @Override
     public String toRespFormat() {
-        return null;
+        if (value == null) {
+            return "$-1\r\n";
+        }
+        return "$" + value.length() + "\r\n" + value + "\r\n";
     }
 }

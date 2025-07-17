@@ -3,12 +3,13 @@ package dataStore.entity;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class ListEntity extends StoredEntity<List<String>> {
 
     public ListEntity(List<String> value) {
-        super(new ArrayList<>(value)); // Defensive copy
+        super(new LinkedList<>(value));
     }
 
     @Override
@@ -18,8 +19,8 @@ public class ListEntity extends StoredEntity<List<String>> {
 
     @Override
     public byte[] serialize() {
-        // Calculate total size
-        int totalSize = 4; // for list size
+
+        int totalSize = 4;
         for (String item : value) {
             totalSize += 4 + item.getBytes(StandardCharsets.UTF_8).length;
         }
@@ -36,7 +37,7 @@ public class ListEntity extends StoredEntity<List<String>> {
         return buffer.array();
     }
 
-    // List-specific methods
+
     public void add(String item) {
         value.add(item);
     }

@@ -1,44 +1,26 @@
 package command;
 
-import command.commandRes.BulkStringResult;
+
 import command.commandRes.CommandResult;
-import command.commandRes.IntegerResult;
-import command.commandRes.SimpleStringResult;
-import dataStore.DataStoreImpl;
-import dataStore.entity.StoredEntity;
-import dataStore.entity.StringEntity;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
-public class CommandExecutor {
+import java.util.List;
 
-    private final DataStoreImpl dataStore;
+public interface CommandExecutor {
+    CommandResult executeSet(List<String> args);
 
-    public CommandResult executeSet(String[] args) {
-        if (args.length != 2) {
-            throw new IllegalArgumentException("SET requires 2 arguments");
-        }
-        String key = args[0];
-        String value = args[1];
-        dataStore.set(key, new StringEntity(value));
-        return new SimpleStringResult("OK");
-    }
+    CommandResult executeGet(List<String> args);
 
-    public CommandResult executeGet(String[] args) {
-        if (args.length != 1) {
-            throw new IllegalArgumentException("GET requires 1 argument");
-        }
-        String key = args[0];
-        var value = dataStore.get(key);
-        return new BulkStringResult((String) value.getValue());
-    }
+    CommandResult executeDel(List<String> args);
 
-    public CommandResult executeDel(String[] args) {
-        if (args.length != 1) {
-            throw new IllegalArgumentException("DEL requires 1 argument");
-        }
-        String key = args[0];
-        boolean removed = dataStore.delete(key);
-        return  new IntegerResult( removed? 1 : 0);
-    }
+    CommandResult executeListAdd(List<String> args);
+
+    CommandResult executeLRange(List<String> args);
+
+    CommandResult executeRPush(List<String> args);
+
+    CommandResult executeLPop(List<String> args);
+
+    CommandResult executeRPop(List<String> args);
+
+    CommandResult executeType(List<String> args);
 }

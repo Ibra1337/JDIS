@@ -13,6 +13,6 @@ public class IntegerResult implements CommandResult {
 
     @Override
     public String toRespFormat() {
-        return null;
+        return ":" + value + "\r\n";
     }
 }

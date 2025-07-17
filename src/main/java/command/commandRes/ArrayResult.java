@@ -15,6 +15,15 @@ public class ArrayResult implements CommandResult {
 
     @Override
     public String toRespFormat() {
-        return null;
+        StringBuilder sb = new StringBuilder();
+        if (elements == null) {
+            sb.append("*-1\r\n");
+        } else {
+            sb.append("*").append(elements.size()).append("\r\n");
+            for (CommandResult elem : elements) {
+                sb.append(elem.toRespFormat());
+            }
+        }
+        return sb.toString();
     }
 }
