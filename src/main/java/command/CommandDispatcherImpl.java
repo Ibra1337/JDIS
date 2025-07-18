@@ -28,6 +28,12 @@ public class CommandDispatcherImpl implements CommandDispatcher {
                 return executor.executeRPop(args);
             case "TYPE":
                 return executor.executeType(args);
+            case "XADD":
+                return executor.executeXadd(args);
+            case "XRANGE":
+                return executor.executeXrange(args);
+            case "XREAD":
+                return executor.executeXread(args);
             default:
                 throw new UnsupportedOperationException("Unknown command: " + commandName);
         }

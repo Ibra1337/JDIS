@@ -7,7 +7,8 @@ public enum StoredEntityType {
     HASH((byte) 0x04),
     SET((byte) 0x05),
     SORTED_SET((byte) 0x06),
-    DOUBLE((byte) 0x07);
+    DOUBLE((byte) 0x07),
+    STREAM((byte) 0x08);
 
     private final byte typeMarker;
 

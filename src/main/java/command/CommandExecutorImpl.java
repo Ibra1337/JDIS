@@ -1,15 +1,14 @@
-package command;
-
-import command.commandRes.*;
-import dataStore.DataStoreImpl;
-import dataStore.entity.ListEntity;
+import dataStore.entity.StreamEntity;
+import dataStore.entity.StoredEntity;
 import dataStore.entity.StoredEntityType;
 import dataStore.entity.StringEntity;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 public class CommandExecutorImpl implements CommandExecutor {
@@ -222,5 +221,135 @@ public class CommandExecutorImpl implements CommandExecutor {
         return new SimpleStringResult(typeName);
     }
 
+    @Override
+    public CommandResult executeXadd(List<String> args) {
+        if (args.size() < 3 || args.size() % 2 != 1) {
+            return new ErrorResult("ERR wrong number of arguments for 'xadd' command");
+        }
 
+        String key = args.get(0);
+        String id = args.get(1);
+
+        StoredEntity<?> entry = dataStore.get(key);
+        StreamEntity streamEntity;
+
+        if (entry == null) {
+            streamEntity = new StreamEntity();
+            dataStore.set(key, streamEntity);
+        } else if (entry.getType() == StoredEntityType.STREAM) {
+            streamEntity = (StreamEntity) entry;
+        } else {
+            return new ErrorResult("WRONGTYPE Operation against a key holding the wrong kind of value");
+        }
+
+        if (id.equals("*")) {
+            id = (System.currentTimeMillis()) + "-0";
+        }
+
+        Map<String, String> fields = new HashMap<>();
+        for (int i = 2; i < args.size(); i += 2) {
+            fields.put(args.get(i), args.get(i + 1));
+        }
+
+        streamEntity.add(id, fields);
+
+        return new BulkStringResult(id);
+    }
+
+    @Override
+    public CommandResult executeXrange(List<String> args) {
+        if (args.size() != 3) {
+            return new ErrorResult("ERR wrong number of arguments for 'xrange' command");
+        }
+
+        String key = args.get(0);
+        String start = args.get(1);
+        String end = args.get(2);
+
+        StoredEntity<?> entry = dataStore.get(key);
+        if (entry == null || entry.getType() != StoredEntityType.STREAM) {
+            return new ArrayResult(new ArrayList<>());
+        }
+
+        StreamEntity streamEntity = (StreamEntity) entry;
+        var streamData = streamEntity.getValue();
+
+        if (start.equals("-")) {
+            start = streamData.firstKey();
+        }
+        if (end.equals("+")) {
+            end = streamData.lastKey();
+        }
+
+        var subMap = streamData.subMap(start, true, end, true);
+
+        List<CommandResult> result = new ArrayList<>();
+        for (Map.Entry<String, Map<String, String>> streamEntry : subMap.entrySet()) {
+            List<CommandResult> entryResult = new ArrayList<>();
+            entryResult.add(new BulkStringResult(streamEntry.getKey()));
+
+            List<CommandResult> fields = new ArrayList<>();
+            for (Map.Entry<String, String> field : streamEntry.getValue().entrySet()) {
+                fields.add(new BulkStringResult(field.getKey()));
+                fields.add(new BulkStringResult(field.getValue()));
+            }
+            entryResult.add(new ArrayResult(fields));
+            result.add(new ArrayResult(entryResult));
+        }
+
+        return new ArrayResult(result);
+    }
+
+    @Override
+    public CommandResult executeXread(List<String> args) {
+        if (args.size() < 4 || !args.get(0).equalsIgnoreCase("STREAMS")) {
+            return new ErrorResult("ERR syntax error");
+        }
+
+        int streamKeysCount = (args.size() - 1) / 2;
+        List<String> keys = args.subList(1, 1 + streamKeysCount);
+        List<String> ids = args.subList(1 + streamKeysCount, args.size());
+
+        List<CommandResult> result = new ArrayList<>();
+
+        for (int i = 0; i < keys.size(); i++) {
+            String key = keys.get(i);
+            String id = ids.get(i);
+
+            StoredEntity<?> entry = dataStore.get(key);
+            if (entry == null || entry.getType() != StoredEntityType.STREAM) {
+                continue;
+            }
+
+            StreamEntity streamEntity = (StreamEntity) entry;
+            var streamData = streamEntity.getValue();
+
+            var tailMap = streamData.tailMap(id, false);
+
+            if (tailMap.isEmpty()) {
+                continue;
+            }
+
+            List<CommandResult> streamResult = new ArrayList<>();
+            streamResult.add(new BulkStringResult(key));
+
+            List<CommandResult> entries = new ArrayList<>();
+            for (Map.Entry<String, Map<String, String>> streamEntry : tailMap.entrySet()) {
+                List<CommandResult> entryResult = new ArrayList<>();
+                entryResult.add(new BulkStringResult(streamEntry.getKey()));
+
+                List<CommandResult> fields = new ArrayList<>();
+                for (Map.Entry<String, String> field : streamEntry.getValue().entrySet()) {
+                    fields.add(new BulkStringResult(field.getKey()));
+                    fields.add(new BulkStringResult(field.getValue()));
+                }
+                entryResult.add(new ArrayResult(fields));
+                entries.add(new ArrayResult(entryResult));
+            }
+            streamResult.add(new ArrayResult(entries));
+            result.add(new ArrayResult(streamResult));
+        }
+
+        return new ArrayResult(result);
+    }
 }
